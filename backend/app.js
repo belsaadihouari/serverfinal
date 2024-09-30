@@ -4,8 +4,7 @@ const rateLimit = require("express-rate-limit");
 const port = process.env.PORT || 3000;
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
-const { initializeSecretkey } = require("./generersecretkey");
-const { initializeDatabase } = require("./creationdbappointements");
+
 require("dotenv").config();
 app.use(bodyParser.json());
 // app.use(express.urlencoded({ extended: true }));
