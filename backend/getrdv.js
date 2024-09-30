@@ -1,8 +1,9 @@
 const mongoose = require('mongoose');
-const Rdv = require('./models/rdvschema'); // Assure-toi que le chemin est correct
+const Rdv = require('./models/rdvschema.jsx'); // Assure-toi que le chemin est correct
 
 // Remplace par ton URI MongoDB
 const mongoURI = 'mongodb+srv://stat1401:NKHcI8JKX6PpBGAT@cluster0.kbcujks.mongodb.net/all-data?retryWrites=true&w=majority';
+
 
 async function getrdv() {
     // Connexion à MongoDB
