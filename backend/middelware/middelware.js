@@ -103,6 +103,7 @@ const verifisecretkey = async (req, res, next) => {
     const isCurrentsecretkey = await SecretKeyModel.findOne({ key: reqSecretKey });
     if (isCurrentsecretkey) {
       req.secret = reqSecretKey;
+      
       next();
     }else {
       // La clé secrète n'est pas trouvée

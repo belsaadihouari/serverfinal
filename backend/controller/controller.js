@@ -18,6 +18,19 @@ const { open } = require("sqlite");
 const { hashEmail, encrypt, decrypt } = require("../cryptage.js");
 require("dotenv").config();
 
+function formatDate(dateString) {
+  // Créer un objet Date à partir de la chaîne
+  const date = new Date(dateString);
+
+  // Extraire le jour, le mois et l'année
+  const day = String(date.getUTCDate()).padStart(2, '0'); // Jour
+  const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Mois (0-11)
+  const year = date.getUTCFullYear(); // Année
+
+  // Retourner la date au format DD/MM/YYYY
+  return `${day}/${month}/${year}`;
+}
+
 const user_signup_post = async (req, res) => {
   try {
     const objError = validationResult(req);
@@ -72,8 +85,8 @@ const user_confirmemail_get = async (req, res) => {
 const user_confirmemail2_get = async (req, res) => {
   try {
     const reqID = req.id.iduser;
-
     const user = await addemailtop.findOne({ _id: reqID });
+    
     if (user) {
       const rdvous = await getrdv();
       user.isactive = true;
@@ -81,18 +94,24 @@ const user_confirmemail2_get = async (req, res) => {
       user.hour = rdvous.time;
       const now = new Date();
       user.sendrdv = now;
-      await user.save();
+        // await user.save();
+        
+          await user.save(); // Gestion des erreurs de sauvegarde
+        
+        
+      
       await Mydatatoken.deleteOne({ iduser: reqID });
 
       const decrypted = decrypt(user.email, user.ivemail);
-
-      nodemailerrdv(decrypted, rdvous.date, rdvous.time);
+      const dateString = rdvous.date;
+      const formattedDate = formatDate(dateString);
+      nodemailerrdv(decrypted, formattedDate, rdvous.time);
 
       res.status(200).send("email confirmé.");
       return;
     }
   } catch (error) {
-    res.status(500).send("Erreur lors de la confirmation de l'email.");
+    res.status(500).send(error);
   }
 };
 
