@@ -16,6 +16,7 @@ const corsOptions = {
   origin: [
     "https://www.houaribelsaadi.dev",
     "https://houaribelsaadi.dev",
+    "http://localhost:5173",
   ],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   credentials: true,
