@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const rdvschema = require('./models/rdvschema'); // Assure-toi que le chemin est correct
+const Rdv = require('./models/rdvschema'); // Assure-toi que le chemin est correct
 
 // Remplace par ton URI MongoDB
 const mongoURI = 'mongodb+srv://stat1401:NKHcI8JKX6PpBGAT@cluster0.kbcujks.mongodb.net/all-data?retryWrites=true&w=majority';
@@ -10,7 +10,7 @@ async function getrdv() {
 
     try {
         // Trouver le premier créneau horaire disponible
-        const slot = await rdvschema.findOne({ reserved: false })
+        const slot = await Rdv.findOne({ reserved: false })
             .sort({ date: 1, time: 1 })
             .exec();
 
