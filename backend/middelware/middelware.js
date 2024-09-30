@@ -4,6 +4,7 @@ require("dotenv").config();
 const Mydatatoken = require("../models/tokenSchema");
 const sqlite3 = require("sqlite3").verbose();
 const { open } = require("sqlite");
+const SecretKeyModel = require("../models/secrectkeyschema");
 
 function verifiToken(req, res, next) {
   const tokenUrl = req.query.token;
@@ -96,39 +97,20 @@ const verifisecretkey = async (req, res, next) => {
     return res.json({ secretkeyrequired: "Clé secrète requise." });
   }
 
-  let dbSecretKey;
+  
 
   try {
-   
-
-    // Ouvrir la base de données pour les clés secrètes
-    dbSecretKey = await open({
-      filename: "./secretkey.db",
-      driver: sqlite3.Database,
-    });
-
-    // Rechercher la clé secrète dans la base de données
-    const result = await dbSecretKey.get(
-      "SELECT * FROM secretkey WHERE key = ?",
-      [reqSecretKey]
-    );
-
-    if (result) {
-      // La clé secrète est trouvée dans la base de données
+    const isCurrentsecretkey = await SecretKeyModel.findOne({ key: reqSecretKey });
+    if (isCurrentsecretkey) {
       req.secret = reqSecretKey;
-      next(); // Passe à la suite du traitement (par exemple, vers un autre middleware ou la route)
-    } else {
+      next();
+    }else {
       // La clé secrète n'est pas trouvée
       res.status(401).json({ secretkeyinvalid: "Clé secrète invalide." });
     }
   } catch (error) {
     res.status(500).json({ message: "Erreur serveur." });
-  } finally {
-    // Assurez-vous que la base de données des clés secrètes est fermée
-    if (dbSecretKey) {
-      await dbSecretKey.close();
-    }
-  }
+  } 
 };
 
 

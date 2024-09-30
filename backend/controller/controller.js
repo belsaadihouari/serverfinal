@@ -8,6 +8,8 @@ const nodemailercontact = require("../nodemailer/nodemailercontact.js");
 const nodmailercontactforuser = require("../nodemailer/nodmailercontactforuser.js");
 const nodemailerrdv = require("../nodemailer/nodemailerrdv.js");
 const { validationResult } = require("express-validator");
+const SecretKeyModel = require("../models/secrectkeyschema.js");
+const rdvschema = require("../models/rdvschema.jsx");
 const { getrdv } = require("../getrdv.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -205,29 +207,12 @@ const vuejs_agadir_get = async (req, res) => {
 
 const user_add_email = async (req, res) => {
   try {
-    const reqSecretKey = req.body.secretkey;
-    let dbAppointments;
-    dbAppointments = await open({
-      filename: "./appointments.db",
-      driver: sqlite3.Database,
-    });
-
-    // Vérifier si la table 'appointments' est vide
-    const rows = await dbAppointments.get(
-      "SELECT id, date FROM appointments WHERE reserved = 0 ORDER BY date, time LIMIT 1"
-    );
-    if (!rows) {
+    const notvide = await rdvschema.countDocuments()
+    if (notvide<1) {
       return res.json({ emptytable: "Aucun rendez-vous disponible." });
     }
 
-    // Fermer la base de données des rendez-vous
-    await dbAppointments.close();
 
-
-
-
-
-    
     const objError = validationResult(req);
     if (objError.errors.length > 0) {
       return res.json({ validatorError: objError.errors });
@@ -268,17 +253,8 @@ const user_add_email = async (req, res) => {
 
     const confirmationLink = `${process.env.BASE_URLFRONTPRODU}confirmation2?token=${token}`;
     nodemailercde(req.body.email, confirmationLink);
-    const db = await open({
-      filename: "./secretkey.db",
-      driver: sqlite3.Database,
-    });
-    const resultsecret = await db.get("SELECT * FROM secretkey WHERE key = ?", [
-      reqSecretKey,
-    ]);
-    if (resultsecret) {
-      // La clé secrète est trouvée, la supprimer maintenant
-      await db.run("DELETE FROM secretkey WHERE key = ?", [reqSecretKey]);
-    }
+    const getsecretkey=await SecretKeyModel.deleteOne({ key: req.body.secretkey });
+    
   } catch (error) {
     res.status(500).json({ error: error });
   }

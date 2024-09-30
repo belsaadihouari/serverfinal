@@ -1,45 +1,40 @@
-const sqlite3 = require("sqlite3").verbose();
-const { open } = require("sqlite");
+const mongoose = require('mongoose');
+const rdvschema = require('./models/rdvschema'); // Assure-toi que le chemin est correct
 
-const dbPromise = open({
-  filename: "./appointments.db",
-  driver: sqlite3.Database,
-});
+// Remplace par ton URI MongoDB
+const mongoURI = 'mongodb+srv://stat1401:NKHcI8JKX6PpBGAT@cluster0.kbcujks.mongodb.net/all-data?retryWrites=true&w=majority';
 
 async function getrdv() {
-  const db = await dbPromise;
+    // Connexion à MongoDB
+    await mongoose.connect(mongoURI);
 
-  try {
-    await db.run("BEGIN TRANSACTION");
+    try {
+        // Trouver le premier créneau horaire disponible
+        const slot = await rdvschema.findOne({ reserved: false })
+            .sort({ date: 1, time: 1 })
+            .exec();
 
-    // Trouver le premier créneau horaire disponible
-    const slot = await db.get(
-      "SELECT id, date, time, day_of_week FROM appointments WHERE reserved = 0 ORDER BY date, time LIMIT 1"
-    );
+        if (!slot) {
+            return { error: "No available slots" };
+        }
 
-    if (!slot) {
-      await db.run("ROLLBACK");
-      return { error: "No available slots" };
+        // Marquer le créneau horaire comme réservé
+        slot.reserved = true;
+        await slot.save();
+
+        // Retourner les détails du rendez-vous
+        return {
+            date: slot.date,
+            time: slot.time,
+        };
+    } catch (error) {
+        console.error("Error:", error);
+        return { error: "Internal server error" };
+    } finally {
+        mongoose.connection.close(); // Fermer la connexion à MongoDB
     }
-
-    // Marquer le créneau horaire comme réservé
-    await db.run("UPDATE appointments SET reserved = 1 WHERE id = ?", [
-      slot.id,
-    ]);
-
-    await db.run("COMMIT");
-
-    // Retourner les détails du rendez-vous
-    return {
-      date: slot.date,
-      time: slot.time,
-    };
-  } catch (error) {
-    await db.run("ROLLBACK");
-    return { error: "Internal server error" };
-  }
 }
 
 module.exports = {
-  getrdv,
+    getrdv,
 };
