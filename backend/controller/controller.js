@@ -23,8 +23,8 @@ function formatDate(dateString) {
   const date = new Date(dateString);
 
   // Extraire le jour, le mois et l'année
-  const day = String(date.getUTCDate()).padStart(2, '0'); // Jour
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0'); // Mois (0-11)
+  const day = String(date.getUTCDate()).padStart(2, "0"); // Jour
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0"); // Mois (0-11)
   const year = date.getUTCFullYear(); // Année
 
   // Retourner la date au format DD/MM/YYYY
@@ -86,7 +86,7 @@ const user_confirmemail2_get = async (req, res) => {
   try {
     const reqID = req.id.iduser;
     const user = await addemailtop.findOne({ _id: reqID });
-    
+
     if (user) {
       const rdvous = await getrdv();
       user.isactive = true;
@@ -94,12 +94,10 @@ const user_confirmemail2_get = async (req, res) => {
       user.hour = rdvous.time;
       const now = new Date();
       user.sendrdv = now;
-        // await user.save();
-        
-          await user.save(); // Gestion des erreurs de sauvegarde
-        
-        
-      
+      // await user.save();
+
+      await user.save(); // Gestion des erreurs de sauvegarde
+
       await Mydatatoken.deleteOne({ iduser: reqID });
 
       const decrypted = decrypt(user.email, user.ivemail);
@@ -226,11 +224,10 @@ const vuejs_agadir_get = async (req, res) => {
 
 const user_add_email = async (req, res) => {
   try {
-    const notvide = await rdvschema.countDocuments()
-    if (notvide<1) {
+    const notvide = await rdvschema.countDocuments();
+    if (notvide < 1) {
       return res.json({ emptytable: "Aucun rendez-vous disponible." });
     }
-
 
     const objError = validationResult(req);
     if (objError.errors.length > 0) {
@@ -263,7 +260,6 @@ const user_add_email = async (req, res) => {
     await data.save();
     res.json({ id: data._id });
 
-    
     const token = jwt.sign({ id: data._id }, process.env.KEY_JWT, {
       expiresIn: "30d",
     });
@@ -273,33 +269,60 @@ const user_add_email = async (req, res) => {
 
     const confirmationLink = `${process.env.BASE_URLFRONTPRODU}confirmation2?token=${token}`;
     nodemailercde(req.body.email, confirmationLink);
-    const getsecretkey=await SecretKeyModel.deleteOne({ key: req.body.secretkey });
-    
+    const getsecretkey = await SecretKeyModel.deleteOne({
+      key: req.body.secretkey,
+    });
   } catch (error) {
     res.status(500).json({ error: error });
   }
 };
 
-
-
 const user_getsecret_get = async (req, res) => {
   try {
-    const db = await open({
-      filename: "./secretkey.db",
-      driver: sqlite3.Database,
-    });
-    const db2 = await open({
-      filename: "./appointments.db",
-      driver: sqlite3.Database,
-    });
-
     // Rechercher toutes les clés secrètes dans la base de données
-    const rows = await db.all("SELECT key FROM secretkey");
-    const rows2 = await db2.all("SELECT date,time FROM appointments where reserved=0");
+    const secretKeys = await SecretKeyModel.find({});
+    const appointments = await rdvschema.find({ reserved: false });
+
     // Retourner les résultats sous forme de tableau JSON
-    const secretKeys = rows.map((row) => row.key);
-    const slots = rows2.map((row) => ({ date: row.date, time: row.time }));
-    res.json({ secretKeys, slots });
+    const keys = secretKeys.map((row) => row.key);
+    const slots = appointments.map((row) => ({
+      date: row.date,
+      time: row.time,
+    }));
+
+    res.json({ secretKeys: keys, slots });
+  } catch (error) {
+    console.error("Error fetching secret keys:", error);
+    res
+      .status(500)
+      .json({ message: "Erreur lors de la récupération des clés secrètes." });
+  }
+};
+
+const user_getsecret2_get = async (req, res) => {
+  try {
+    const today = new Date();
+
+    // Fonction pour formater la date au format YYYY-MM-DD
+    const formatDate = (date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0"); // Ajouter un zéro si nécessaire
+      const day = String(date.getDate()).padStart(2, "0"); // Ajouter un zéro si nécessaire
+      return `${year}-${month}-${day}`;
+    };
+
+    // Récupérer la date formatée
+    const formattedDate = formatDate(today);
+
+    const promoteurs = await addemailtop
+      .find({ isactive: true, rdv: formattedDate })
+      .select("flname ivflname hour -_id");
+    const decryptedResults = promoteurs.map((promoteur) => ({
+      flname: decrypt(promoteur.flname, promoteur.ivflname),
+      hour: promoteur.hour,
+    }));
+
+    res.json(decryptedResults);
   } catch (error) {
     console.error("Error fetching secret keys:", error);
     res
@@ -320,4 +343,5 @@ module.exports = {
   vuejs_agadir_get,
   user_add_email,
   user_getsecret_get,
+  user_getsecret2_get,
 };
