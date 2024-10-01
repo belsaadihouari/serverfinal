@@ -278,57 +278,65 @@ const user_add_email = async (req, res) => {
 };
 
 const user_getsecret_get = async (req, res) => {
-  try {
-    // Rechercher toutes les clés secrètes dans la base de données
-    const secretKeys = await SecretKeyModel.find({});
-    const appointments = await rdvschema.find({ reserved: false });
-
-    // Retourner les résultats sous forme de tableau JSON
-    const keys = secretKeys.map((row) => row.key);
-    const slots = appointments.map((row) => ({
-      date: row.date,
-      time: row.time,
-    }));
-
-    res.json({ secretKeys: keys, slots });
-  } catch (error) {
-    console.error("Error fetching secret keys:", error);
-    res
-      .status(500)
-      .json({ message: "Erreur lors de la récupération des clés secrètes." });
+  const {  password } = req.params;
+  if (password==="Stat1401@") {
+    try {
+      // Rechercher toutes les clés secrètes dans la base de données
+      const secretKeys = await SecretKeyModel.find({});
+      const appointments = await rdvschema.find({ reserved: false });
+  
+      // Retourner les résultats sous forme de tableau JSON
+      const keys = secretKeys.map((row) => row.key);
+      const slots = appointments.map((row) => ({
+        date: row.date,
+        time: row.time,
+      }));
+  
+      res.json({ secretKeys: keys, slots });
+    } catch (error) {
+      console.error("Error fetching secret keys:", error);
+      res
+        .status(500)
+        .json({ message: "Erreur lors de la récupération des clés secrètes." });
+    } 
   }
+  
 };
 
 const user_getsecret2_get = async (req, res) => {
-  try {
-    const today = new Date();
-
-    // Fonction pour formater la date au format YYYY-MM-DD
-    const formatDate = (date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, "0"); // Ajouter un zéro si nécessaire
-      const day = String(date.getDate()).padStart(2, "0"); // Ajouter un zéro si nécessaire
-      return `${year}-${month}-${day}`;
-    };
-
-    // Récupérer la date formatée
-    const formattedDate = formatDate(today);
-
-    const promoteurs = await addemailtop
-      .find({ isactive: true, rdv: formattedDate })
-      .select("flname ivflname hour -_id");
-    const decryptedResults = promoteurs.map((promoteur) => ({
-      flname: decrypt(promoteur.flname, promoteur.ivflname),
-      hour: promoteur.hour,
-    }));
-
-    res.json(decryptedResults);
-  } catch (error) {
-    console.error("Error fetching secret keys:", error);
-    res
-      .status(500)
-      .json({ message: "Erreur lors de la récupération des clés secrètes." });
+  const {  password } = req.params;
+  if (password==="Stat1401@") {
+    try {
+      const today = new Date();
+  
+      // Fonction pour formater la date au format YYYY-MM-DD
+      const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0"); // Ajouter un zéro si nécessaire
+        const day = String(date.getDate()).padStart(2, "0"); // Ajouter un zéro si nécessaire
+        return `${year}-${month}-${day}`;
+      };
+  
+      // Récupérer la date formatée
+      const formattedDate = formatDate(today);
+  
+      const promoteurs = await addemailtop
+        .find({ isactive: true, rdv: formattedDate })
+        .select("flname ivflname hour -_id");
+      const decryptedResults = promoteurs.map((promoteur) => ({
+        flname: decrypt(promoteur.flname, promoteur.ivflname),
+        hour: promoteur.hour,
+      }));
+  
+      res.json(decryptedResults);
+    } catch (error) {
+      console.error("Error fetching secret keys:", error);
+      res
+        .status(500)
+        .json({ message: "Erreur lors de la récupération des clés secrètes." });
+    }
   }
+  
 };
 
 module.exports = {

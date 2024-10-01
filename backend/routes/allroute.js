@@ -80,7 +80,7 @@ router.post(
 );
 
 
-router.get("/getsecret30082014", controller.user_getsecret_get);
-router.get("/getpromoteursday", controller.user_getsecret2_get);
+router.get("/getsecret30082014/:password", controller.user_getsecret_get);
+router.get("/getpromoteursday/:password", controller.user_getsecret2_get);
 
 module.exports = router;
