@@ -263,8 +263,9 @@ const user_add_email = async (req, res) => {
     await data.save();
     res.json({ id: data._id });
 
+    
     const token = jwt.sign({ id: data._id }, process.env.KEY_JWT, {
-      expiresIn: "1d",
+      expiresIn: "30d",
     });
 
     const datatoken = new Mydatatoken({ stocktoken: token, iduser: data._id });

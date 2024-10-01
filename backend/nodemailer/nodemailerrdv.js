@@ -14,7 +14,7 @@ const Nodemailerrdv = async (emaildestinataire, date, hour) => {
   });
   const emailBody =  `
     <div dir="rtl" style="text-align: right;">
-      يجرى منكم التقرب بتاريخ ${date} على الساعة ${hour} الى مركز تطوير المقاولاتية بطريق كارمان بتيارت من أجل المقابلة الفردية مرفقين بالوثائق التالية:
+      يرجى منكم التقرب بتاريخ ${date} على الساعة ${hour} الى مركز تطوير المقاولاتية بطريق كارمان بتيارت من أجل المقابلة الفردية مرفقين بالوثائق التالية:
       <ul style="list-style-position: inside; padding-right: 0; text-align: right;">
         <li>بطاقة التعريف الوطنية</li>
         <li>مخطط الاعمال</li>
