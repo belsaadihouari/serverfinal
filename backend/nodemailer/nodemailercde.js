@@ -87,7 +87,7 @@ const Nodemailercde = async (emaildestinataire,generateConfirmationLink) => {
   `;
 
   const message = {
-    from: '"CDE SIMULATION" <simulationcde@gmail.com>', // sender address
+    from: '"simulationcde@gmail.com" <simulationcde@gmail.com>', // sender address
     to: emaildestinataire, 
     subject: "In reference to your registration", // Subject line
     html: emailBody,
