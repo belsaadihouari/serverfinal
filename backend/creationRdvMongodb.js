@@ -75,12 +75,12 @@ async function initializeDatabase() {
 }
 
 // Appel de la fonction pour initialiser la base de données
-initializeDatabase()
-  .then(() => {
-    console.log("Rendez-vous initialisés avec succès !");
-    mongoose.connection.close();
-  })
-  .catch((error) => {
-    console.error("Erreur lors de l'initialisation :", error);
-    mongoose.connection.close();
-  });
+// initializeDatabase()
+//   .then(() => {
+//     console.log("Rendez-vous initialisés avec succès !");
+//     mongoose.connection.close();
+//   })
+//   .catch((error) => {
+//     console.error("Erreur lors de l'initialisation :", error);
+//     mongoose.connection.close();
+//   });

@@ -32,4 +32,4 @@ async function verifyAndRemoveSecretKeys() {
 }
 
 // Exécution de la fonction
-verifyAndRemoveSecretKeys();
+// verifyAndRemoveSecretKeys();
