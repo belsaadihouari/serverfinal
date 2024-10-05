@@ -1,28 +1,28 @@
 const sqlite3 = require("sqlite3").verbose();
 const { open } = require("sqlite");
-const crypto = require("crypto");
 
-// Fonction pour générer une clé secrète aléatoire avec au moins une majuscule et un caractère spécial
+// Fonction pour générer une clé secrète aléatoire avec des lettres minuscules et des chiffres
 function generateSecretKey(length = 10) {
-  if (length < 3) {
-    throw new Error('La longueur de la clé doit être au moins 3 pour inclure une majuscule et un caractère spécial.');
+  if (length < 2) {
+    throw new Error('La longueur de la clé doit être d\'au moins 2 caractères pour inclure une lettre et un chiffre.');
   }
 
   const lowerChars = 'abcdefghijklmnopqrstuvwxyz';
-  const upperChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  const specialChars = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-  const allChars = lowerChars + upperChars + specialChars + '0123456789';
- 
+  const digits = '0123456789';
+  const allChars = lowerChars + digits;
 
+  // Assurez-vous d'avoir au moins une lettre et un chiffre
   let key = '';
-  key += upperChars[Math.floor(Math.random() * upperChars.length)];
-  key += specialChars[Math.floor(Math.random() * specialChars.length)];
+  key += lowerChars[Math.floor(Math.random() * lowerChars.length)]; // Ajouter une lettre
+  key += digits[Math.floor(Math.random() * digits.length)]; // Ajouter un chiffre
 
+  // Compléter la clé avec des caractères aléatoires
   for (let i = 2; i < length; i++) {
     key += allChars[Math.floor(Math.random() * allChars.length)];
   }
 
-  key = key.split('').sort(() => Math.random() - 0.5).join(''); // Mélange les caractères pour éviter des motifs prévisibles
+  // Mélanger les caractères pour éviter des motifs prévisibles
+  key = key.split('').sort(() => Math.random() - 0.5).join('');
 
   return key;
 }
@@ -45,12 +45,12 @@ async function initializeSecretkey() {
   // Vérifier si des données existent déjà
   const countResult = await db.get("SELECT COUNT(*) AS count FROM secretkey");
   if (countResult.count === 0) {
-    // Si aucune donnée n'existe, insérer 50 clés secrètes
+    // Si aucune donnée n'existe, insérer 200 clés secrètes
     try {
       await db.run("BEGIN TRANSACTION");
 
       for (let i = 0; i < 200; i++) {
-        const secretKey = generateSecretKey(); // Générer une clé secrète
+        const secretKey = generateSecretKey(10); // Générer une clé secrète de 10 caractères
         await db.run("INSERT INTO secretkey (key) VALUES (?)", [secretKey]);
       }
 

@@ -27,6 +27,7 @@ function decrypt(encryptedData, iv) {
     return decrypted;
 }
 
+
 // Exporter les fonctions
 module.exports = {
     encrypt,

@@ -11,8 +11,10 @@ const Nodemailercde = async (emaildestinataire,generateConfirmationLink) => {
       // TODO: replace `user` and `pass` values from <https://forwardemail.net>
       user: "simulationcde@gmail.com",
       pass: "dbtylaflbxmahtcz",
+      
     },
- 
+    
+    
   });
   const emailBody = `
    <!DOCTYPE html>

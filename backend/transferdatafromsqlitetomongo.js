@@ -17,7 +17,7 @@ mongoose.connect(mongoURI)
     .catch(err => console.error('Erreur de connexion à MongoDB:', err));
 
 // Connexion à SQLite
-const db = new sqlite3.Database('./secretkey.db', (err) => {
+const db = new sqlite3.Database('./secretkey2.db', (err) => {
     if (err) {
         console.error('Erreur de connexion à SQLite:', err.message);
     } else {
