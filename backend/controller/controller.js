@@ -16,7 +16,7 @@ const jwt = require("jsonwebtoken");
 const sqlite3 = require("sqlite3").verbose();
 const { open } = require("sqlite");
 const { hashEmail, encrypt, decrypt } = require("../cryptage.js");
-const { format, utcToZonedTime } = require('date-fns-tz');
+
 require("dotenv").config();
 
 function formatDate(dateString) {
@@ -349,20 +349,17 @@ const user_getsecret2_get = async (req, res) => {
     try {
       const today = new Date();
 
-      // Convertir l'heure actuelle en heure d'Algerie
-      const timeZone = 'Africa/Algiers';
-      const algeriaTime = utcToZonedTime(today, timeZone);
+      // Récupérer l'heure d'Algerie (UTC+1)
+      const options = { timeZone: 'Africa/Algiers', year: 'numeric', month: '2-digit', day: '2-digit' };
+      const formatter = new Intl.DateTimeFormat('fr-FR', options);
+      const parts = formatter.formatToParts(today);
+      
+      // Extraire l'année, le mois et le jour
+      const year = parts.find(part => part.type === 'year').value;
+      const month = parts.find(part => part.type === 'month').value.padStart(2, '0');
+      const day = parts.find(part => part.type === 'day').value.padStart(2, '0');
 
-      // Fonction pour formater la date au format YYYY-MM-DD
-      const formatDate = (date) => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0"); // Ajouter un zéro si nécessaire
-        const day = String(date.getDate()).padStart(2, "0"); // Ajouter un zéro si nécessaire
-        return `${year}-${month}-${day}`;
-      };
-
-      // Récupérer la date formatée
-      const formattedDate = formatDate(algeriaTime);
+      const formattedDate = `${year}-${month}-${day}`;
 
       const promoteurs = await addemailtop
         .find({ isactive: true, rdv: formattedDate })
