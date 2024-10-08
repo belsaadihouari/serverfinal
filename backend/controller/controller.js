@@ -262,6 +262,9 @@ const user_add_email = async (req, res) => {
        const deleteuser = await addemailtop.deleteOne({
       email: isCurrentEmail.email,
      });
+     const deletetoken = await Mydatatoken.deleteOne({
+      iduser: isCurrentEmail._id,
+     });
     }
     }
 
