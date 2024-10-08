@@ -59,8 +59,8 @@ async function initializeDatabase() {
   );
   if (countResult.count === 0) {
     // Si aucune donnée n'existe, insérer les créneaux horaires
-    const slots = ["09:00", "09:45", "10:30", "11:15"]; // Créneaux horaires
-    const startDate = "2024-10-10"; // Date de début
+    const slots = ["09:00", "10:00", "11:00"]; // Créneaux horaires
+    const startDate = "2024-10-17"; // Date de début
     const endDate = "2024-11-30"; // Date de fin
     const days = getDatesInRange(startDate, endDate);
 

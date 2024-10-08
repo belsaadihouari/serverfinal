@@ -234,15 +234,41 @@ const user_add_email = async (req, res) => {
     if (objError.errors.length > 0) {
       return res.json({ validatorError: objError.errors });
     }
-
+    
+    const monjour = new Date();
+    
     const hashedEmail = hashEmail(req.body.email);
+    
 
     const isCurrentEmail = await addemailtop.findOne({
+      
       emailhash: hashedEmail,
+      $or: [
+        { rdv: { $gt: monjour } },
+        { rdv: new Date('1900-01-01T00:00:00.000Z') }
+    ]
     });
+    
     if (isCurrentEmail) {
+      
+    
+    
+    if (isCurrentEmail.isactive===false) {
+      const trenteJoursEnMillis = 30 * 24 * 60 * 60 * 1000;
+      const differenceEnMillis = monjour - isCurrentEmail.createdAt;
+      if (differenceEnMillis < trenteJoursEnMillis) {
+        return res.json({ isCurrentEmailverify: "Veuillez confirmer votre adresse e-mail." });
+    }else{
+       const deleteuser = await addemailtop.deleteOne({
+      email: isCurrentEmail.email,
+     });
+    }
+    }
+
+    if (isCurrentEmail.isactive===true) {
       return res.json({ isCurrentEmail: "Email already exists" });
     }
+  }
     const { iv: ivemail, encryptedData } = encrypt(req.body.email);
     const { iv: ivflname, encryptedData: encryptedflname } = encrypt(
       req.body.flname

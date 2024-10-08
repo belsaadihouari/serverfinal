@@ -50,8 +50,8 @@ async function initializeDatabase() {
 
   const count = await Rdv.countDocuments();
   if (count === 0) {
-    const slots = ["09:00", "09:45", "10:30", "11:15"]; // Créneaux horaires
-    const startDate = "2024-10-10"; // Date de début
+    const slots = ["09:00",  "10:00", "11:00"]; // Créneaux horaires
+    const startDate = "2024-10-17"; // Date de début
     const endDate = "2024-11-30"; // Date de fin
     const days = getDatesInRange(startDate, endDate);
 
@@ -74,7 +74,7 @@ async function initializeDatabase() {
   }
 }
 
-// Appel de la fonction pour initialiser la base de données
+//Appel de la fonction pour initialiser la base de données
 // initializeDatabase()
 //   .then(() => {
 //     console.log("Rendez-vous initialisés avec succès !");
