@@ -572,7 +572,7 @@ const user_verifyemail_post = async (req, res) => {
         });
         await datatoken.save();
 
-        const confirmationLink = `http://localhost:5173/changeappointment?token=${token}`;
+        const confirmationLink = `https://houaribelsaadi.dev/changeappointment?token=${token}`;
         nodemailerchangerdv(
           decrypt(promoteurs.email, promoteurs.ivemail),
           confirmationLink
