@@ -8,6 +8,7 @@ const {
   ratingcheck,
   pingro,
   verifisecretkey,
+  verifiTokenchange,
 } = require("../middelware/middelware");
 
 router.get("/vuejs/agadir", controller.vuejs_agadir_get);
@@ -54,7 +55,7 @@ router.post(
 );
 
 router.get("/confirmation", verifiToken, controller.user_confirmemail_get);
-
+router.post("/confirmationchangerdv", verifiTokenchange, controller.user_changerdv_post);
 router.get("/confirmation2", verifiToken, controller.user_confirmemail2_get);
 
 router.post(
@@ -82,5 +83,11 @@ router.post(
 
 router.get("/getsecret30082014/:password", controller.user_getsecret_get);
 router.get("/getpromoteursday/:password", controller.user_getsecret2_get);
+router.get("/get",verifiTokenchange, controller.user_getsecret3_get);
+router.post(
+  "/verifyemail",
+  [check("email", "Please provide a valid email").isEmail()],
+  controller.user_verifyemail_post
+);
 
 module.exports = router;

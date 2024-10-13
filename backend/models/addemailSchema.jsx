@@ -19,7 +19,8 @@ const addemail = new Schema(
     sendrdv: { type: Date, default: defaultDate },
     emailhash: { type: String,default:""},
     ivemail:{type:String,default:""},
-    ivflname:{type:String,default:""}
+    ivflname:{type:String,default:""},
+    changerdv:{type:Boolean,default:false}
   },
   { timestamps: true }
 );

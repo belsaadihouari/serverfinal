@@ -1,20 +1,24 @@
 const Mydata = require("../models/UserSchema");
 const addemailtop = require("../models/addemailSchema.jsx");
 const Mydatatoken = require("../models/tokenSchema");
+const Mytokenchangerdv = require("../models/tokenSchemachangerdv.js");
 const DataSchema = require("../models/DataSchema.jsx");
 const contactSchema = require("../models/contactSchema.jsx");
 const nodemailercde = require("../nodemailer/nodemailercde.js");
+const nodemailer = require("../nodemailer/nodemailer.js");
+const nodemailerchangerdv = require("../nodemailer/nodemailerchangerdv");
 const nodemailercontact = require("../nodemailer/nodemailercontact.js");
 const nodmailercontactforuser = require("../nodemailer/nodmailercontactforuser.js");
 const nodemailerrdv = require("../nodemailer/nodemailerrdv.js");
+const nodemailerchangedrdv = require("../nodemailer/nodemailerchangedrdv.js");
 const { validationResult } = require("express-validator");
 const SecretKeyModel = require("../models/secrectkeyschema.js");
 const rdvschema = require("../models/rdvschema.jsx");
 const { getrdv } = require("../getrdv.js");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const sqlite3 = require("sqlite3").verbose();
-const { open } = require("sqlite");
+// const sqlite3 = require("sqlite3").verbose();
+// const { open } = require("sqlite");
 const { hashEmail, encrypt, decrypt } = require("../cryptage.js");
 
 require("dotenv").config();
@@ -108,6 +112,57 @@ const user_confirmemail2_get = async (req, res) => {
 
       res.status(200).send("email confirmé.");
       return;
+    }
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
+const user_changerdv_post = async (req, res) => {
+  try {
+    const reqID = req.id.iduser;
+
+    const user = await addemailtop.findOne({ _id: reqID });
+
+    if (user) {
+      if (user.changerdv == false) {
+        const firstdate = user.rdv;
+        const firsthour = user.hour;
+        const verifydate = await rdvschema.findOne({
+          date: firstdate,
+          time: firsthour,
+        });
+
+        const rdvs = await rdvschema.findOne({
+          date: req.body.date,
+          time: req.body.hour,
+        });
+
+        if (verifydate && rdvs) {
+          verifydate.reserved = false;
+          rdvs.reserved = true;
+          user.rdv = req.body.date;
+          user.hour = req.body.hour;
+          user.changerdv = true;
+          await verifydate.save();
+          await rdvs.save();
+          await user.save();
+        }
+
+        await Mytokenchangerdv.deleteOne({ iduser: reqID });
+        const decrypted = decrypt(user.email, user.ivemail);
+
+        const dateString = user.rdv;
+
+        const formattedDate = formatDate(dateString);
+
+        nodemailerchangedrdv(decrypted, formattedDate, user.hour);
+        return res.json({ rdvchanged: "appointment changed successufly" });
+      } else {
+        return res.json({
+          rdvalreadychanged: "Appointment has already been changed once",
+        });
+      }
     }
   } catch (error) {
     res.status(500).send(error);
@@ -234,44 +289,44 @@ const user_add_email = async (req, res) => {
     if (objError.errors.length > 0) {
       return res.json({ validatorError: objError.errors });
     }
-    
+
     const monjour = new Date();
-    
+
     const hashedEmail = hashEmail(req.body.email);
-    
 
     const isCurrentEmail = await addemailtop.findOne({
-      
       emailhash: hashedEmail,
       $or: [
         { rdv: { $gt: monjour } },
-        { rdv: new Date('1900-01-01T00:00:00.000Z') }
-    ]
+        { rdv: new Date("1900-01-01T00:00:00.000Z") },
+      ],
     });
-    
+
     if (isCurrentEmail) {
-      
-    
-    
-    if (isCurrentEmail.isactive===false) {
-      const trenteJoursEnMillis = 30 * 24 * 60 * 60 * 1000;
-      const differenceEnMillis = monjour - isCurrentEmail.createdAt;
-      if (differenceEnMillis < trenteJoursEnMillis) {
-        return res.json({ isCurrentEmailverify: "Veuillez confirmer votre adresse e-mail." });
-    }else{
-       const deleteuser = await addemailtop.deleteOne({
-      email: isCurrentEmail.email,
-     });
-     const deletetoken = await Mydatatoken.deleteOne({
-      iduser: isCurrentEmail._id,
-     });
-    }
+      if (isCurrentEmail.isactive === false) {
+        const trenteJoursEnMillis = 30 * 24 * 60 * 60 * 1000;
+        const differenceEnMillis = monjour - isCurrentEmail.createdAt;
+        if (differenceEnMillis < trenteJoursEnMillis) {
+          return res.json({
+            isCurrentEmailverify: "Veuillez confirmer votre adresse e-mail.",
+          });
+        } else {
+          const deleteuser = await addemailtop.deleteOne({
+            email: isCurrentEmail.email,
+          });
+          const deletetoken = await Mydatatoken.deleteOne({
+            iduser: isCurrentEmail._id,
+          });
+        }
+      }
+
+      if (isCurrentEmail.isactive === true) {
+        if (isCurrentEmail.rdv >= monjour) {
+          return res.json({ isCurrentEmail: "Email already exists" });
+        }
+      }
     }
 
-    if (isCurrentEmail.isactive===true) {
-      return res.json({ isCurrentEmail: "Email already exists" });
-    }
-  }
     const { iv: ivemail, encryptedData } = encrypt(req.body.email);
     const { iv: ivflname, encryptedData: encryptedflname } = encrypt(
       req.body.flname
@@ -308,29 +363,28 @@ const user_add_email = async (req, res) => {
 };
 
 const user_getsecret_get = async (req, res) => {
-  const {  password } = req.params;
-  if (password==="Stat1401@") {
+  const { password } = req.params;
+  if (password === "Stat1401@") {
     try {
       // Rechercher toutes les clés secrètes dans la base de données
       const secretKeys = await SecretKeyModel.find({});
       const appointments = await rdvschema.find({ reserved: false });
-  
+
       // Retourner les résultats sous forme de tableau JSON
       const keys = secretKeys.map((row) => row.key);
       const slots = appointments.map((row) => ({
         date: row.date,
         time: row.time,
       }));
-  
+
       res.json({ secretKeys: keys, slots });
     } catch (error) {
       console.error("Error fetching secret keys:", error);
       res
         .status(500)
         .json({ message: "Erreur lors de la récupération des clés secrètes." });
-    } 
+    }
   }
-  
 };
 
 // const user_getsecret2_get = async (req, res) => {
@@ -338,7 +392,7 @@ const user_getsecret_get = async (req, res) => {
 //   if (password==="Stat1401@") {
 //     try {
 //       const today = new Date();
-  
+
 //       // Fonction pour formater la date au format YYYY-MM-DD
 //       const formatDate = (date) => {
 //         const year = date.getFullYear();
@@ -346,10 +400,10 @@ const user_getsecret_get = async (req, res) => {
 //         const day = String(date.getDate()).padStart(2, "0"); // Ajouter un zéro si nécessaire
 //         return `${year}-${month}-${day}`;
 //       };
-  
+
 //       // Récupérer la date formatée
 //       const formattedDate = formatDate(today);
-  
+
 //       const promoteurs = await addemailtop
 //         .find({ isactive: true, rdv: formattedDate })
 //         .select("flname ivflname hour -_id");
@@ -357,7 +411,7 @@ const user_getsecret_get = async (req, res) => {
 //         flname: decrypt(promoteur.flname, promoteur.ivflname),
 //         hour: promoteur.hour,
 //       }));
-  
+
 //       res.json(decryptedResults);
 //     } catch (error) {
 //       console.error("Error fetching secret keys:", error);
@@ -366,11 +420,8 @@ const user_getsecret_get = async (req, res) => {
 //         .json({ message: "Erreur lors de la récupération des clés secrètes." });
 //     }
 //   }
-  
+
 // };
-
-
-
 
 const user_getsecret2_get = async (req, res) => {
   const { password } = req.params;
@@ -379,14 +430,23 @@ const user_getsecret2_get = async (req, res) => {
       const today = new Date();
 
       // Récupérer l'heure d'Algerie (UTC+1)
-      const options = { timeZone: 'Africa/Algiers', year: 'numeric', month: '2-digit', day: '2-digit' };
-      const formatter = new Intl.DateTimeFormat('fr-FR', options);
+      const options = {
+        timeZone: "Africa/Algiers",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+      };
+      const formatter = new Intl.DateTimeFormat("fr-FR", options);
       const parts = formatter.formatToParts(today);
-      
+
       // Extraire l'année, le mois et le jour
-      const year = parts.find(part => part.type === 'year').value;
-      const month = parts.find(part => part.type === 'month').value.padStart(2, '0');
-      const day = parts.find(part => part.type === 'day').value.padStart(2, '0');
+      const year = parts.find((part) => part.type === "year").value;
+      const month = parts
+        .find((part) => part.type === "month")
+        .value.padStart(2, "0");
+      const day = parts
+        .find((part) => part.type === "day")
+        .value.padStart(2, "0");
 
       const formattedDate = `${year}-${month}-${day}`;
 
@@ -409,6 +469,136 @@ const user_getsecret2_get = async (req, res) => {
   }
 };
 
+const user_getsecret3_get = async (req, res) => {
+  const id = req.id.iduser;
+  const user = await addemailtop.findOne({ _id: id });
+
+  try {
+    const promoteurs = await rdvschema
+      .find({ reserved: false, date: { $gt: user.rdv } })
+      .select("date time _id");
+
+    res.json({ promoteurs, datas: "data is available" });
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Erreur lors de la récupération des clés secrètes." });
+  }
+};
+
+// const user_verifyemail_post = async (req, res) => {
+//   try {
+//     const objError = validationResult(req);
+//     if (objError.errors.length > 0) {
+//       return res.json({ validatorError: objError.errors });
+//     }
+//     const today = new Date();
+//     const dateAfter48Hours = new Date(today); // Créer une copie de la date actuelle
+//     dateAfter48Hours.setHours(today.getHours() + 48);
+//     const hashedEmail = hashEmail(req.body.email);
+
+//     const promoteurs = await addemailtop.findOne({
+
+//       emailhash: hashedEmail,
+//       isactive: true,
+//       rdv: { $gt: dateAfter48Hours }, // Vérifiez que rdv est supérieur à formattedDate + 48 heures
+//     });
+
+//     if (promoteurs.changerdv===false) {
+//       const token = jwt.sign(
+//         { id: promoteurs._id, email: promoteurs.email },
+//         process.env.KEY_JWT,
+//         { expiresIn: "1h" }
+//       );
+
+//       const datatoken = new Mytokenchangerdv({
+//         stocktoken: token,
+//         iduser: promoteurs._id,
+//       });
+//       await datatoken.save();
+
+//       const confirmationLink = `http://localhost:5173/changeappointment?token=${token}`;
+//       nodemailerchangerdv(
+//         decrypt(promoteurs.email, promoteurs.ivemail),
+//         confirmationLink
+//       );
+//       res.json({ message: "ok" });
+//     } else{
+//       if (promoteurs.changerdv===true) {
+//         res.json({ rdvalreadychanged: "appointment already changed" });
+//       }else{
+//         if (promoteurs!==null) {
+//           res.json({ notexist: "not exist" });
+//         }
+//       }
+//     }
+
+//   } catch (error) {
+//     console.error("Error fetching email:", error);
+//     res.status(500).json({ message: "Error." });
+//   }
+// };
+
+const user_verifyemail_post = async (req, res) => {
+  try {
+    const objError = validationResult(req);
+    if (objError.errors.length > 0) {
+      return res.json({ validatorError: objError.errors });
+    }
+
+    const today = new Date();
+    const dateAfter48Hours = new Date(today);
+    dateAfter48Hours.setHours(today.getHours() + 48);
+    const hashedEmail = hashEmail(req.body.email);
+
+    const promoteurs = await addemailtop.findOne({
+      emailhash: hashedEmail,
+      isactive: true,
+      rdv: { $gt: dateAfter48Hours }, // Vérifiez que rdv est supérieur à 48 heures
+    });
+
+    if (promoteurs) {
+      // Vérifiez si promoteurs existe
+      if (promoteurs.changerdv === false) {
+        const token = jwt.sign(
+          { id: promoteurs._id, email: promoteurs.email },
+          process.env.KEY_JWT,
+          { expiresIn: "1h" }
+        );
+
+        const datatoken = new Mytokenchangerdv({
+          stocktoken: token,
+          iduser: promoteurs._id,
+        });
+        await datatoken.save();
+
+        const confirmationLink = `http://localhost:5173/changeappointment?token=${token}`;
+        nodemailerchangerdv(
+          decrypt(promoteurs.email, promoteurs.ivemail),
+          confirmationLink
+        );
+        return res.json({ message: "ok" });
+      } else {
+        return res.json({ rdvalreadychanged: "appointment already changed" });
+      }
+    } else {
+      const promoteurs2 = await addemailtop.findOne({
+        emailhash: hashedEmail,
+        isactive: true,
+        rdv: { $gte: today }, 
+      });
+      if (promoteurs2) {
+        return res.json({ moin48: "moin 48 heures" });
+      }else{
+        return res.json({ notexist: "not exist" });
+      }
+      
+    }
+  } catch (error) {
+    console.error("Error fetching email:", error);
+    res.status(500).json({ message: "Error." });
+  }
+};
 
 module.exports = {
   user_signup_post,
@@ -423,4 +613,7 @@ module.exports = {
   user_add_email,
   user_getsecret_get,
   user_getsecret2_get,
+  user_getsecret3_get,
+  user_verifyemail_post,
+  user_changerdv_post,
 };

@@ -2,8 +2,7 @@ const jwt = require("jsonwebtoken");
 const Mydata = require("../models/UserSchema");
 require("dotenv").config();
 const Mydatatoken = require("../models/tokenSchema");
-const sqlite3 = require("sqlite3").verbose();
-const { open } = require("sqlite");
+const Mytokenchangerdv = require("../models/tokenSchemachangerdv.js");
 const SecretKeyModel = require("../models/secrectkeyschema");
 
 function verifiToken(req, res, next) {
@@ -61,7 +60,7 @@ const ratingcheck = (req, res, next) => {
   }
 };
 const pingro = (req, res, next) => {
-return  res.status(200).json({ success: "true" });
+  return res.status(200).json({ success: "true" });
 };
 
 const checkIfUser = (req, res, next) => {
@@ -97,24 +96,55 @@ const verifisecretkey = async (req, res, next) => {
     return res.json({ secretkeyrequired: "Clé secrète requise." });
   }
 
-  
-
   try {
-    const isCurrentsecretkey = await SecretKeyModel.findOne({ key: reqSecretKey });
+    const isCurrentsecretkey = await SecretKeyModel.findOne({
+      key: reqSecretKey,
+    });
     if (isCurrentsecretkey) {
       req.secret = reqSecretKey;
-      
+
       next();
-    }else {
+    } else {
       // La clé secrète n'est pas trouvée
       res.status(401).json({ secretkeyinvalid: "Clé secrète invalide." });
     }
   } catch (error) {
     res.status(500).json({ message: "Erreur serveur." });
-  } 
+  }
 };
 
-
+function verifiTokenchange(req, res, next) {
+  const tokenUrl = req.query.token;
+  
+  
+  if (tokenUrl) {
+    jwt.verify(tokenUrl, process.env.KEY_JWT, async (err, decoded) => {
+      if (err) {
+        return res.json({ errortoken: "Token not valid" });
+      } else {
+        const mytkenchange = await Mytokenchangerdv.findOne({ iduser: decoded.id });
+        
+        if (!mytkenchange) {
+          return res.json({ erroralreadychanged: "appointment already changed" });
+        } else if (mytkenchange.stocktoken == tokenUrl) {
+          
+          req.id = {
+            iduser: decoded.id,
+          };
+          
+          next();
+        } else {
+          // Gérer d'autres cas non prévus
+          return res
+            .status(500)
+            .json({ error: "Erreur lors de----------- la confirmation de l'email" });
+        }
+      }
+    });
+  } else {
+    return res.status(400).json({ error: "Token not found" });
+  }
+}
 
 module.exports = {
   verifiToken,
@@ -122,5 +152,5 @@ module.exports = {
   ratingcheck,
   pingro,
   verifisecretkey,
-  
+  verifiTokenchange,
 };
