@@ -144,20 +144,24 @@ const user_changerdv_post = async (req, res) => {
           user.rdv = req.body.date;
           user.hour = req.body.hour;
           user.changerdv = true;
-          await verifydate.save();
-          await rdvs.save();
-          await user.save();
+
+          
+          res.json({ rdvchanged: "Appointment changed successfully" });
+
+          
+          Promise.all([
+            verifydate.save(),
+            rdvs.save(),
+            user.save(),
+            Mytokenchangerdv.deleteOne({ iduser: reqID }),
+          ]).then(() => {
+            const decrypted = decrypt(user.email, user.ivemail);
+            const formattedDate = formatDate(user.rdv);
+            nodemailerchangedrdv(decrypted, formattedDate, user.hour);
+          }).catch(err => {
+            console.error("Error during saving or sending email:", err);
+          });
         }
-
-        await Mytokenchangerdv.deleteOne({ iduser: reqID });
-        const decrypted = decrypt(user.email, user.ivemail);
-
-        const dateString = user.rdv;
-
-        const formattedDate = formatDate(dateString);
-
-        nodemailerchangedrdv(decrypted, formattedDate, user.hour);
-        return res.json({ rdvchanged: "appointment changed successufly" });
       } else {
         return res.json({
           rdvalreadychanged: "Appointment has already been changed once",
@@ -168,6 +172,61 @@ const user_changerdv_post = async (req, res) => {
     res.status(500).send(error);
   }
 };
+
+
+
+
+
+// const user_changerdv_post = async (req, res) => {
+//   try {
+//     const reqID = req.id.iduser;
+
+//     const user = await addemailtop.findOne({ _id: reqID });
+
+//     if (user) {
+//       if (user.changerdv == false) {
+//         const firstdate = user.rdv;
+//         const firsthour = user.hour;
+//         const verifydate = await rdvschema.findOne({
+//           date: firstdate,
+//           time: firsthour,
+//         });
+
+//         const rdvs = await rdvschema.findOne({
+//           date: req.body.date,
+//           time: req.body.hour,
+//         });
+
+//         if (verifydate && rdvs) {
+//           verifydate.reserved = false;
+//           rdvs.reserved = true;
+//           user.rdv = req.body.date;
+//           user.hour = req.body.hour;
+//           user.changerdv = true;
+//           await verifydate.save();
+//           await rdvs.save();
+//           await user.save();
+//         }
+
+//         await Mytokenchangerdv.deleteOne({ iduser: reqID });
+//         const decrypted = decrypt(user.email, user.ivemail);
+
+//         const dateString = user.rdv;
+
+//         const formattedDate = formatDate(dateString);
+//         res.json({ rdvchanged: "appointment changed successufly" });
+//         nodemailerchangedrdv(decrypted, formattedDate, user.hour);
+        
+//       } else {
+//         return res.json({
+//           rdvalreadychanged: "Appointment has already been changed once",
+//         });
+//       }
+//     }
+//   } catch (error) {
+//     res.status(500).send(error);
+//   }
+// };
 
 const user_signin_post = async (req, res) => {
   try {
